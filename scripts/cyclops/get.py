@@ -393,7 +393,7 @@ def get_deployment_dict(cur):
     return reactor_deployments(governments, timestep, entry, exit_step)
 
 
-def get_trade_dict(cur, sender, receiver,
+def trade_timeseries(cur, sender, receiver,
                    is_prototype, do_isotopic,
                    is_cum=True):
     """Returns trade timeseries between two prototypes' or facilities
@@ -417,7 +417,7 @@ def get_trade_dict(cur, sender, receiver,
 
     Returns:
     --------
-    return_dict: dictionary
+    trades: dictionary
         if do_isotopic:
             dictionary with "key=isotope, and
                         value=timeseries list
@@ -430,8 +430,8 @@ def get_trade_dict(cur, sender, receiver,
 
     """
     init_year, init_month, duration, timestep = get_timesteps(cur)
-    iso_dict = collections.defaultdict(list)
-    return_dict = collections.defaultdict()
+    isotope_timeseries = collections.defaultdict(list)
+    trades = collections.defaultdict()
 
     if is_prototype:
         sender_id = get_prototype_id(cur, sender)
@@ -463,21 +463,22 @@ def get_trade_dict(cur, sender, receiver,
         )
     if do_isotopic:
         for time, amount, nucid in trade:
-            iso_dict[nucname.name(nucid)].append((time, amount))
-        for key in iso_dict:
+            isotope_timeseries[nucname.name(nucid)].append((time, amount))
+        for key in isotope_timeseries:
             if is_cum:
-                iso_dict[key] = get_timeseries_cum(
-                    iso_dict[key], duration, True)
+                isotope_timeseries[key] = get_timeseries_cum(
+                    isotope_timeseries[key], duration, True)
             else:
-                iso_dict[key] = get_timeseries(iso_dict[key], duration, True)
-        return iso_dict
+                isotope_timeseries[key] = get_timeseries(isotope_timeseries[key], duration, True)
+        return isotope_timeseries
     else:
         key_name = str(sender)[:5] + ' to ' + str(receiver)[:5]
         if is_cum:
-            return_dict[key_name] = get_timeseries_cum(trade, duration, True)
+            trades[key_name] = get_timeseries_cum(trade, duration, True)
         else:
-            return_dict[key_name] = get_timeseries(trade, duration, True)
-        return return_dict
+            trades[key_name] = get_timeseries(trade, duration, True)
+        return trades
+
 
 
 def get_waste_dict(isotope_list, mass_list, time_list, duration):

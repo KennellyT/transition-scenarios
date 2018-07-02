@@ -30,14 +30,14 @@ def timestep_to_years(init_year, timestep):
     return init_year + (timestep / 12)
 
 
-def fuel_usage_timeseries(cur, fuel_list, is_cum=True):
+def fuel_usage_timeseries(cur, fuels, is_cum=True):
     """Calculates total fuel usage over time
 
     Parameters
     ----------
     cur: sqlite cursor
         sqlite cursor
-    fuel_list: list
+    fuels: list
         list of fuel commodity names (eg. uox, mox) as string
         to consider in fuel usage.
     is_cum: bool
@@ -45,13 +45,13 @@ def fuel_usage_timeseries(cur, fuel_list, is_cum=True):
 
     Returns
     -------
-    fuel_dict: dictionary
-        dictionary with "key=fuel (from fuel_list),
+    fuel_timeseries: dictionary
+        dictionary with "key=fuel (from fuels),
         value=timeseries list of fuel amount [kg]"
     """
-    fuel_dict = collections.OrderedDict()
+    fuel_timeseries = collections.OrderedDict()
     init_year, init_month, duration, timestep = get_timesteps(cur)
-    for fuel in fuel_list:
+    for fuel in fuels:
         temp_list = [fuel]
         fuel_quantity = cur.execute(exec_string(temp_list, 'commodity',
                                                 'time, sum(quantity)') +
@@ -64,11 +64,12 @@ def fuel_usage_timeseries(cur, fuel_list, is_cum=True):
             else:
                 quantity_timeseries = get_timeseries(
                     fuel_quantity, duration, True)
-            fuel_dict[fuel] = quantity_timeseries
+            fuel_timeseries[fuel] = quantity_timeseries
         except:
             print(str(fuel) + ' has not been used.')
 
-    return fuel_dict
+    return fuel_timeseries
+
 
 
 def nat_u_timeseries(cur, is_cum=True):
@@ -113,17 +114,17 @@ def final_stockpile(cur, facility):
 
     Returns
     -------
-    outstring: str
+    mthm_stockpile: str
         MTHM value of stockpile
     """
     agentid = get_agent_ids(cur, facility)
-    outstring = ''
+    mthm_stockpile = ''
     for agent in agentid:
         count = 1
         name = cur.execute('SELECT prototype FROM agententry'
                            'WHERE agentid = ' + str(agent)).fetchone()
 
-        outstring += 'The Stockpile in ' + str(name[0]) + ' : \n \n'
+        mthm_stockpile += 'The Stockpile in ' + str(name[0]) + ' : \n \n'
         stkpile = cur.execute('SELECT sum(quantity), inventoryname, qualid'
                               ' FROM agentstateinventories'
                               ' INNER JOIN resources'
@@ -138,20 +139,21 @@ def final_stockpile(cur, facility):
                                  'WHERE qualid = ' +
                                  str(stream['qualid'])).fetchall()
 
-            outstring += ('Stream ' + str(count) +
+            mthm_stockpile += ('Stream ' + str(count) +
                           ' Total = ' + str(stream['sum(quantity)']) +
                           ' kg \n')
             for isotope in masses:
-                outstring += (str(isotope['nucid']) + ' = ' +
+                mthm_stockpile += (str(isotope['nucid']) + ' = ' +
                               str(isotope['massfrac'] *
                                   stream['sum(quantity)']) +
                               ' kg \n')
-            outstring += '\n'
+            mthm_stockpile += '\n'
             count += 1
-        outstring += '\n'
-    outstring += '\n'
+        mthm_stockpile += '\n'
+    mthm_stockpile += '\n'
 
-    return outstring
+    return mthm_stockpile
+
 
 
 def fuel_into_reactors(cur, is_cum=True):
