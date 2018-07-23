@@ -271,3 +271,9 @@ def test_capacity_calc():
     for key in power_dict:
         assert np.array_equal(
             power_dict[key], answer_power[key]) == True
+
+def test_mass_timeseries():
+    """Test capacity_calc function"""
+    cur = get_sqlite()
+    facility = 'uox_reprocessing' 
+    flux = 'in'
